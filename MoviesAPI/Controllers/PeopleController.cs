@@ -6,6 +6,7 @@ using MoviesAPI.DTOs;
 using MoviesAPI.Entities;
 using MoviesAPI.Services;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace MoviesAPI.Controllers
@@ -39,7 +40,7 @@ namespace MoviesAPI.Controllers
         public async Task<ActionResult<PersonDTO>> Get(int id)
         {
             var person = await context.People.FirstOrDefaultAsync(x => x.Id == id);
-            return mapper.Map<PersonDTO>(person);
+            return mapper.Map<PersonDTO>(person); 
         }
 
         [HttpPost]
@@ -76,9 +77,9 @@ namespace MoviesAPI.Controllers
             else
             {
                 return NoContent();
-
+               
             }
-
+           
         }
     }
 }
