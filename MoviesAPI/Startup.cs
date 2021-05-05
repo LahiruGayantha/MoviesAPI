@@ -24,6 +24,8 @@ namespace MoviesAPI
         {
             services.AddDbContext<ApplicationDbContext>(options=>options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
             services.AddAutoMapper(typeof(Startup));
+            services.AddTransient<IFilesStorageService, InAppStorageService>();
+            services.AddHttpContextAccessor();
             services.AddControllers(options=>
             {
                 options.Filters.Add(typeof(MyExceptionFilter));
@@ -48,6 +50,7 @@ namespace MoviesAPI
             app.UseRouting();
 
             //app.UseResponseCaching();
+            app.UseStaticFiles();
 
             app.UseAuthentication();
 
