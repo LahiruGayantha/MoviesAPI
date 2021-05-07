@@ -40,7 +40,7 @@ namespace MoviesAPI.Controllers
         public async Task<ActionResult<PersonDTO>> Get(int id)
         {
             var person = await context.People.FirstOrDefaultAsync(x => x.Id == id);
-            return mapper.Map<PersonDTO>(person); 
+            return mapper.Map<PersonDTO>(person);
         }
 
         [HttpPost]
@@ -58,8 +58,8 @@ namespace MoviesAPI.Controllers
             //        person.Picture = await filesStorageService.SaveFile(content, extention, containerName, createPerson.Picture.ContentType);
             //    }
             //}
-            context.Add(person);
-            context.SaveChanges();
+            await context.AddAsync(person);
+            await context.SaveChangesAsync();
             var personDTO = mapper.Map<PersonDTO>(person);
             return new CreatedAtRouteResult("getPerson", new { personDTO.Id }, personDTO);
         }
@@ -77,9 +77,28 @@ namespace MoviesAPI.Controllers
             else
             {
                 return NoContent();
-               
+
             }
-           
+
+        }
+
+        [HttpPut("{id:int}")]
+        public async Task<ActionResult> Put(int id, [FromForm] CreatePersonDTO createPersonDTO)
+        {
+            var exists = await context.People.AnyAsync(person => person.Id == id);
+            if (exists)
+            {
+                var updatedDetails = mapper.Map<Person>(createPersonDTO);
+                updatedDetails.Id = id;
+                context.Entry(updatedDetails).State = EntityState.Modified;
+                await context.SaveChangesAsync();
+                var updatedPerson = mapper.Map<PersonDTO>(updatedDetails);
+                return new CreatedAtRouteResult("getPerson", new { updatedPerson.Id }, updatedPerson);
+            }
+            else
+            {
+                return NoContent();
+            }
         }
     }
 }
