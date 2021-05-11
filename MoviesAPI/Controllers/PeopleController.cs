@@ -1,12 +1,13 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using MoviesAPI.DTOs;
 using MoviesAPI.Entities;
+using MoviesAPI.Helpers;
 using MoviesAPI.Services;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace MoviesAPI.Controllers
@@ -19,7 +20,6 @@ namespace MoviesAPI.Controllers
         private readonly IMapper mapper;
         private readonly ILogger<PeopleController> logger;
         private readonly IFilesStorageService filesStorageService;
-        private readonly string containerName = "people";
 
         public PeopleController(ApplicationDbContext context, IMapper mapper, ILogger<PeopleController> logger, IFilesStorageService filesStorageService)
         {
@@ -30,9 +30,11 @@ namespace MoviesAPI.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<List<PersonDTO>>> Get()
+        public async Task<ActionResult<List<PersonDTO>>> Get([FromQuery] PaginationDTO pagination)
         {
-            var people = await context.People.ToListAsync();
+            var queryable = context.People.AsQueryable();
+            await HttpContext.InsertPaginationParametersInResponse(queryable, pagination.RecordsPerPage);
+            var people = await queryable.Paginate(pagination).ToListAsync();
             return mapper.Map<List<PersonDTO>>(people);
         }
 
@@ -99,6 +101,24 @@ namespace MoviesAPI.Controllers
             {
                 return NoContent();
             }
+        }
+
+        [HttpPatch("{id}")]
+        public async Task<ActionResult> Patch(int id, [FromBody] JsonPatchDocument<PersonPatchDTO> jsonPatchDocument)
+        {
+            var entityFromBd = await context.People.FirstOrDefaultAsync(x => x.Id == id);
+            var entityDTO = mapper.Map<PersonPatchDTO>(entityFromBd);
+            jsonPatchDocument.ApplyTo(entityDTO, ModelState);
+            var isValidate = TryValidateModel(entityDTO);
+            if (!isValidate)
+            {
+                return BadRequest(ModelState);
+            }
+
+            mapper.Map(entityDTO, entityFromBd);
+            await context.SaveChangesAsync();
+            return NoContent();
+
         }
     }
 }

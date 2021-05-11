@@ -29,7 +29,9 @@ namespace MoviesAPI
             services.AddControllers(options=>
             {
                 options.Filters.Add(typeof(MyExceptionFilter));
-            }).AddXmlDataContractSerializerFormatters();
+            })
+                .AddNewtonsoftJson()
+                .AddXmlDataContractSerializerFormatters();
             //services.AddResponseCaching();
             //services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer();
             //services.AddTransient<MyActionFilter>();
