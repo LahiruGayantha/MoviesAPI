@@ -15,6 +15,13 @@ namespace MoviesAPI
 
         }
 
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<MovieGenres>().HasKey(MovieGenres => new { MovieGenres.MovieId, MovieGenres.GenreId });
+            modelBuilder.Entity<MovieActors>().HasKey(MovieActors => new { MovieActors.MovieId, MovieActors.PersonId });
+            base.OnModelCreating(modelBuilder);
+        }
+
         public DbSet<Genre> Genres { get; set; }
         public DbSet<Person> People { get; set; }
         public DbSet<Movie> Movies { get; set; }

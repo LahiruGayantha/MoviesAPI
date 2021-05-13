@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Mvc;
+using MoviesAPI.Helpers;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
@@ -14,5 +16,9 @@ namespace MoviesAPI.DTOs
         public DateTime ReleaseDate { get; set; }
         public bool IsShowing { get; set; }
         public byte[] Image { get; set; }
+        [ModelBinder(BinderType =typeof(TypeBinder<List<int>>))]
+        public List<int> GenreIds { get; set; }
+        [ModelBinder(BinderType = typeof(TypeBinder<List<ActorDTO>>))]
+        public List<ActorDTO> Actors { get; set; }
     }
 }

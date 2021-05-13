@@ -54,20 +54,17 @@ namespace MoviesAPI.Controllers
         [HttpPut("{id:int}")]
         public async Task<ActionResult<MoviesDTO>> UpdateFromPut(int id, [FromForm] CreateMovieDTO createMovieDTO)
         {
-            var exists = await context.Movies.AnyAsync(movie => movie.Id == id);
-            if (!exists)
+            var movieDB = await context.Movies.FirstOrDefaultAsync(movie => movie.Id == id);
+            if (movieDB==null)
             {
                 return NoContent();
             }
-            else
-            {
-                var udateDetails = mapper.Map<Movie>(createMovieDTO);
-                udateDetails.Id = id;
-                context.Entry(udateDetails).State = EntityState.Modified;
-                await context.SaveChangesAsync();
-                var updatedDetails = mapper.Map<MoviesDTO>(udateDetails);
-                return updatedDetails;
-            }
+            movieDB = mapper.Map(createMovieDTO, movieDB);
+            movieDB.Id = id;
+            await context.Database.ExecuteSqlInterpolatedAsync($"delete from MovieActors where MovieId={id};delete from MovieGenres where MovieId={id}");
+            await context.SaveChangesAsync();
+            var updatedDetails = mapper.Map<MoviesDTO>(movieDB);
+            return updatedDetails;
         }
 
         [HttpDelete("{id:int}")]

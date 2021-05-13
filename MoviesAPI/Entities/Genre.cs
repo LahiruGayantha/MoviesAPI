@@ -15,7 +15,7 @@ namespace MoviesAPI.Entities
         [Required(ErrorMessage ="The field with name {0} is required")]
         [StringLength(10)]
         public string Name { get; set; }
-
+        public List<MovieGenres> MovieGenres { get; set; }
 
         ////This is module validation function
         //public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)

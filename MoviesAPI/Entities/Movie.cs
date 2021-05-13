@@ -15,5 +15,7 @@ namespace MoviesAPI.Entities
         public DateTime ReleaseDate { get; set; }
         public bool IsShowing { get; set; }
         public byte[] Image { get; set; }
+        public List<MovieGenres> MovieGenres { get; set; }
+        public List<MovieActors> MovieActors { get; set; }
     }
 }
