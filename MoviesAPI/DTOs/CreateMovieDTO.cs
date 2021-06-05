@@ -18,7 +18,7 @@ namespace MoviesAPI.DTOs
         public byte[] Image { get; set; }
         [ModelBinder(BinderType =typeof(TypeBinder<List<int>>))]
         public List<int> GenreIds { get; set; }
-        [ModelBinder(BinderType = typeof(TypeBinder<List<ActorDTO>>))]
-        public List<ActorDTO> Actors { get; set; }
+        [ModelBinder(BinderType = typeof(TypeBinder<List<ActorCreationDTO>>))]
+        public List<ActorCreationDTO> Actors { get; set; }
     }
 }

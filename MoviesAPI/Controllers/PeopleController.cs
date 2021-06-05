@@ -8,6 +8,7 @@ using MoviesAPI.Entities;
 using MoviesAPI.Helpers;
 using MoviesAPI.Services;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading.Tasks;
 
 namespace MoviesAPI.Controllers
@@ -19,9 +20,10 @@ namespace MoviesAPI.Controllers
         private readonly ApplicationDbContext context;
         private readonly IMapper mapper;
         private readonly ILogger<PeopleController> logger;
-        private readonly IFilesStorageService filesStorageService;
+        private readonly IFileStorageService filesStorageService;
+        private string containerName = "personImages";
 
-        public PeopleController(ApplicationDbContext context, IMapper mapper, ILogger<PeopleController> logger, IFilesStorageService filesStorageService)
+        public PeopleController(ApplicationDbContext context, IMapper mapper, ILogger<PeopleController> logger, IFileStorageService filesStorageService)
         {
             this.context = context;
             this.mapper = mapper;
@@ -50,16 +52,16 @@ namespace MoviesAPI.Controllers
         {
             var person = mapper.Map<Person>(createPerson);
 
-            //if (createPerson.Picture != null)
-            //{
-            //    using (var memoryStream = new MemoryStream())
-            //    {
-            //        await createPerson.Picture.CopyToAsync(memoryStream);
-            //        var content = memoryStream.ToArray();
-            //        var extention = Path.GetExtension(createPerson.Picture.FileName);
-            //        person.Picture = await filesStorageService.SaveFile(content, extention, containerName, createPerson.Picture.ContentType);
-            //    }
-            //}
+            if (createPerson.Picture != null)
+            {
+                using (var memoryStream = new MemoryStream())
+                {
+                    await createPerson.Picture.CopyToAsync(memoryStream);
+                    var content = memoryStream.ToArray();
+                    var extention = Path.GetExtension(createPerson.Picture.FileName);
+                    person.Picture = await filesStorageService.SaveFile(content, extention, containerName, createPerson.Picture.ContentType);
+                }
+            }
             await context.AddAsync(person);
             await context.SaveChangesAsync();
             var personDTO = mapper.Map<PersonDTO>(person);

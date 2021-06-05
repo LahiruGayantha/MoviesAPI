@@ -20,14 +20,41 @@ namespace MoviesAPI.Helpers
             CreateMap<Person, PersonPatchDTO>().ReverseMap();
 
             CreateMap<Movie, MoviesDTO>().ReverseMap();
+
             CreateMap<CreateMovieDTO, Movie>()
                 .ForMember(x => x.Image, options => options.Ignore())
                 .ForMember(x => x.MovieGenres, options => options.MapFrom(MapMovieGenres))
                 .ForMember(x => x.MovieActors, options => options.MapFrom(MapMovieActors));
 
+            CreateMap<Movie, MovieDetailsDTO>()
+                .ForMember(x => x.Genres, options => options.MapFrom(MapMovieGenres))
+                .ForMember(x => x.Actors, options => options.MapFrom(MapMovieActors));
+
+            CreateMap<List<Movie>, IndexMoviePageDTO>().ReverseMap();
 
             CreateMap<Movie, MoviesPatchDTO>().ReverseMap();
         }
+
+        private List<GenreDTO> MapMovieGenres(Movie movie,MovieDetailsDTO movieDetailsDTO)
+        {
+            var result = new List<GenreDTO>();
+            foreach (var movieGenre in movie.MovieGenres)
+            {
+                result.Add(new GenreDTO() {Id=movieGenre.GenreId,Name=movieGenre.Genre.Name});
+            }
+            return result;
+        }
+
+        private List<ActorDTO> MapMovieActors(Movie movie, MovieDetailsDTO movieDetailsDTO)
+        {
+            var result = new List<ActorDTO>();
+            foreach (var actor in movie.MovieActors)
+            {
+                result.Add(new ActorDTO() { PersonId = actor.PersonId, Order = actor.Order, Charactor = actor.Charactor,PersonName=actor.Person.Name});
+            }
+            return result;
+        }
+
 
         private List<MovieGenres> MapMovieGenres(CreateMovieDTO createMovieDTO, Movie movie)
         {
@@ -39,10 +66,10 @@ namespace MoviesAPI.Helpers
             return result;
         }
 
-        private List<MovieActors> MapMovieActors(CreateMovieDTO createMovieDTO,Movie movie)
+        private List<MovieActors> MapMovieActors(CreateMovieDTO createMovieDTO, Movie movie)
         {
             var result = new List<MovieActors>();
-            foreach (ActorDTO  actor in createMovieDTO.Actors)
+            foreach (ActorCreationDTO actor in createMovieDTO.Actors)
             {
                 result.Add(new MovieActors() { PersonId = actor.PersonId, Order = actor.Order, Charactor = actor.Charactor });
             }

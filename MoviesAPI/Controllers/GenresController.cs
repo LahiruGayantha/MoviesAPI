@@ -1,4 +1,6 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -27,8 +29,8 @@ namespace MoviesAPI.Controllers
         }
 
         [HttpGet]
-        //[Authorize(AuthenticationSchemes =JwtBearerDefaults.AuthenticationScheme)]
         //[ServiceFilter(typeof(MyActionFilter))]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         public async Task<ActionResult<List<GenreDTO>>> Get()
         {
             //logger.LogInformation("Getting all the genres");

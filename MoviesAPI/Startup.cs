@@ -7,6 +7,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using MoviesAPI.Filters;
 using MoviesAPI.Services;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+using System;
 
 namespace MoviesAPI
 {
@@ -22,11 +26,31 @@ namespace MoviesAPI
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddDbContext<ApplicationDbContext>(options=>options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
+            services.AddRazorPages();
+            services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
+            services.AddIdentity<IdentityUser, IdentityRole>()
+                .AddEntityFrameworkStores<ApplicationDbContext>()
+                .AddDefaultTokenProviders();
+
+            services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+                .AddJwtBearer(options =>
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer=false,
+                    ValidateAudience=false,
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Configuration["jwt:key"])),
+                    ClockSkew=TimeSpan.Zero
+                }) ;
+
             services.AddAutoMapper(typeof(Startup));
-            services.AddTransient<IFilesStorageService, InAppStorageService>();
+            services.AddTransient<IFileStorageService, InAppStorageService>();
             services.AddHttpContextAccessor();
-            services.AddControllers(options=>
+            services.AddTransient<IHostedService, MovieInTheatorService>();
+            services.AddTransient<IHostedService, MovieInTheatorServiceTest>();
+            services.AddHttpContextAccessor();
+            services.AddControllers(options =>
             {
                 options.Filters.Add(typeof(MyExceptionFilter));
             })
@@ -49,10 +73,11 @@ namespace MoviesAPI
 
             app.UseHttpsRedirection();
 
+            app.UseStaticFiles();
+
             app.UseRouting();
 
             //app.UseResponseCaching();
-            app.UseStaticFiles();
 
             app.UseAuthentication();
 
@@ -60,6 +85,7 @@ namespace MoviesAPI
 
             app.UseEndpoints(endpoints =>
             {
+                endpoints.MapRazorPages();
                 endpoints.MapControllers();
             });
         }

@@ -5,9 +5,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using MoviesAPI.DTOs;
 using MoviesAPI.Entities;
+using MoviesAPI.Helpers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Dynamic.Core;
 using System.Threading.Tasks;
 
 namespace MoviesAPI.Controllers
@@ -27,11 +29,97 @@ namespace MoviesAPI.Controllers
             this.mapper = mapper;
         }
 
-        [HttpGet]
-        public async Task<ActionResult<List<MoviesDTO>>> Get()
+        [HttpGet("inTheater")]
+        public async Task<ActionResult<IndexMoviePageDTO>> Get()
         {
-            var allMovies = await context.Movies.AsNoTracking().ToListAsync();
-            return mapper.Map<List<MoviesDTO>>(allMovies);
+            var inTheaters = await context.Movies
+                .Where(x => x.IsShowing == true)
+                .OrderBy(x => x.Id)
+                .Take(2)
+                .ToListAsync();
+
+            var upcommingRelease = await context.Movies
+                .Where(x => x.ReleaseDate > DateTime.Today)
+                .OrderBy(x => x.Id)
+                .Take(2)
+                .ToListAsync();
+
+            var result = new IndexMoviePageDTO
+            {
+                UpCommingMovies = mapper.Map<List<MoviesDTO>>(upcommingRelease),
+                InTheatorMovies = mapper.Map<List<MoviesDTO>>(inTheaters)
+            };
+            return result;
+        }
+
+        [HttpGet("filter")]
+        public async Task<ActionResult<List<MoviesDTO>>> Filter([FromQuery] FilterMoviesDTO filterMoviesDTO)
+        {
+            var moviesQueryable = context.Movies.AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(filterMoviesDTO.Title))
+            {
+                moviesQueryable = moviesQueryable.Where(x => x.Title.Contains(filterMoviesDTO.Title));
+            }
+
+            if (filterMoviesDTO.InTheator)
+            {
+                moviesQueryable = moviesQueryable.Where(x => x.IsShowing);
+            }
+
+            if (filterMoviesDTO.UpCommingReleases)
+            {
+                moviesQueryable = moviesQueryable.Where(x => x.ReleaseDate > DateTime.Today);
+            }
+
+            if (filterMoviesDTO.GenreId != 0)
+            {
+                moviesQueryable = moviesQueryable.Where(x => x.MovieGenres.Select(y => y.GenreId).Contains(filterMoviesDTO.GenreId));
+            }
+
+            if (!string.IsNullOrWhiteSpace(filterMoviesDTO.OrderBy))
+            {
+                try
+                {
+                    moviesQueryable = moviesQueryable.OrderBy($"{filterMoviesDTO.OrderBy} {(filterMoviesDTO.Ascending ? "ascending" : "descending")}");
+                }
+                catch (Exception e)
+                {
+                    // throw;
+                    logger.LogWarning("Error Detected", e.Message);
+                }
+            }
+
+            await HttpContext.InsertPaginationParametersInResponse(moviesQueryable, filterMoviesDTO.RecordsPerPage);
+
+            var moviesList = await moviesQueryable.Paginate(filterMoviesDTO.Pagination).ToListAsync();
+
+            return mapper.Map<List<MoviesDTO>>(moviesList);
+        }
+
+        [HttpGet]
+        public async Task<ActionResult<List<MoviesDTO>>> GetAllMovies()
+        {
+            var movies = await context.Movies.ToListAsync();
+            return mapper.Map<List<MoviesDTO>>(movies);
+        }
+
+
+        [HttpGet("details/{id:int}")]
+        public async Task<ActionResult<MovieDetailsDTO>> movieDetails(int id)
+        {
+            var movie = await context.Movies
+                .Include(x => x.MovieActors).ThenInclude(x => x.Person)
+                .Include(x => x.MovieGenres).ThenInclude(x => x.Genre)
+                .FirstOrDefaultAsync(x => x.Id == id);
+
+            if (movie == null)
+            {
+                return NotFound();
+            }
+
+            return mapper.Map<MovieDetailsDTO>(movie);
+
         }
 
         [HttpGet("{id:int}", Name = "getMovieById")]
@@ -55,7 +143,7 @@ namespace MoviesAPI.Controllers
         public async Task<ActionResult<MoviesDTO>> UpdateFromPut(int id, [FromForm] CreateMovieDTO createMovieDTO)
         {
             var movieDB = await context.Movies.FirstOrDefaultAsync(movie => movie.Id == id);
-            if (movieDB==null)
+            if (movieDB == null)
             {
                 return NoContent();
             }
@@ -84,10 +172,10 @@ namespace MoviesAPI.Controllers
         }
 
         [HttpPatch("{id:int}")]
-        public async Task<ActionResult> Patch(int id,[FromBody] JsonPatchDocument<MoviesPatchDTO> patchDocument)
+        public async Task<ActionResult> Patch(int id, [FromBody] JsonPatchDocument<MoviesPatchDTO> patchDocument)
         {
             var movie = await context.Movies.FirstOrDefaultAsync(movie => movie.Id == id);
-            var patchMovieDTO = mapper.Map < MoviesPatchDTO > (movie);
+            var patchMovieDTO = mapper.Map<MoviesPatchDTO>(movie);
             patchDocument.ApplyTo(patchMovieDTO, ModelState);
             var isValid = TryValidateModel(patchMovieDTO);
             if (!isValid)
